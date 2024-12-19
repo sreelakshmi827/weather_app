@@ -12,30 +12,37 @@ load_dotenv()
 
 def signup_view(request):
     if request.method == 'POST':
+        errors={}
         email = request.POST.get('email')
         username = request.POST.get('username')
         password = request.POST.get('password')
         confirm_password = request.POST.get('confirm_password')
+
         if CustomUser.objects.filter(email=email).exists():
-            messages.error(request, 'Email is already taken')
+            errors["email"]="email already registered"
+            #messages.error(request, 'Email is already taken')
+            #return render(request,'signup.html')
             print('email already taken')
             return redirect('signup') 
-        
+                                                            
         if password==confirm_password:
             user=CustomUser.objects.create_user(
             email=email,
-            username=username) 
-            user.set_password(password)
+            username=username,
+            password=password) 
             user.save()
-
-
-            messages.success(request, 'Account created successfully. Please log in.')
             return redirect('signin')
-        messages.error(request, 'Email is already taken')
+        else:   
+            errors["confirm_password"]="password do not match"
+            # return render(request,'signup.html')
+            if errors:
+                return render(request,'signup.html',{'errors':errors})
     return render(request,'signup.html')
+
 
 def signin_view(request):
     if request.method == 'POST': 
+        errors={}
         username = request.POST.get('username')
         password = request.POST.get('password')
         user=authenticate(request,username=username,password=password)
@@ -43,7 +50,8 @@ def signin_view(request):
             login(request,user)
             return redirect('weather')
         else:
-            messages.error(request, 'wrong password')
+            errors['user']='user not found'
+            #messages.error(request, 'wrong password')
             return redirect('signin')
     return render(request,'signin.html')
 def logout_view(request):
@@ -55,6 +63,7 @@ def home_view(request):
 
 @login_required(login_url='signin')
 def weather_view(request):
+    errors={}
 
     if 'city' in request.POST:
         city=request.POST.get('city')
@@ -84,7 +93,8 @@ def weather_view(request):
     
     except KeyError:
         exception_occured =True
-        messages.error(request,'entered data is not available to API')
+        errors['weather']='enentered data is not available to API'
+        #messages.error(request,'entered data is not available to API')
         day = datetime.date.today()
     return render(request,'weather.html', {
         'description':'clear sky',
